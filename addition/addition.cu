@@ -1,0 +1,146 @@
+#include <stdlib.h>
+#include <stdio.h>
+#include <string.h>
+
+#include <cuda_runtime.h>
+
+// prints error if detected and exits 
+void inline check(cudaError_t err, const char* filename, int line)
+{
+    if (err != cudaSuccess) 
+    { 
+        printf("%s-l%i: %s\n", filename, line, cudaGetErrorString(err)); 
+        exit(EXIT_FAILURE);
+    }
+}
+
+// prints start and end of float array
+void printArrayTerse(float* array, int length, int num)
+{
+    if (length<2*num) { num = length/2; }
+    for (int i=0; i<num; i++)
+    {
+        printf("%.0f ",array[i]);
+    }
+    printf("... ");
+    for (int i=length-num; i<length; i++)
+    {
+        printf("%.0f ",array[i]);
+    }
+    printf("\n");
+
+}
+
+// GPU kernel to add two vectors: A + B = C
+__global__ void vectorAdd(float* a, float* b, float* c, int n)
+{
+    int offset = blockDim.x*blockIdx.x+threadIdx.x;
+    int total = blockDim.x*gridDim.x;
+    for (int i=offset; i<n; i+=total)
+    {
+        // HINT: add vectors here <--
+    }
+}
+
+// add two vectors
+int main(int argc, char** argv)
+{
+    // variable declarations
+    cudaError_t err;                 // variable for error codes
+    int device;                      // current device id
+    struct cudaDeviceProp prop;      // current device properties
+    float* hostArrayA;                 // pointer for array A in host memory
+    float* hostArrayB;                 // pointer for array B in host memory
+    float* hostArrayC;                 // pointer for array C in host memory
+    float* deviceArrayA;               // pointer for array A in device memory
+    float* deviceArrayB;               // pointer for array B in device memory
+    float* deviceArrayC;               // pointer for array C in device memory
+    int length = 262144;             // length of array
+    int size = length*sizeof(float);   // size of array in bytes
+
+    // get device properties
+    err = cudaGetDevice(&device);
+    check(err, __FILE__, __LINE__);
+    err = cudaGetDeviceProperties(&prop, device);
+    check(err, __FILE__, __LINE__);
+    printf("\nDevice properties: using %s\n\n",prop.name);
+
+    // allocate host memory
+    err = cudaHostAlloc((void**)&hostArrayA,size,cudaHostAllocDefault);
+    check(err, __FILE__, __LINE__);
+    err = cudaHostAlloc((void**)&hostArrayB,size,cudaHostAllocDefault);
+    check(err, __FILE__, __LINE__);
+    err = cudaHostAlloc((void**)&hostArrayC,size,cudaHostAllocDefault);
+    check(err, __FILE__, __LINE__);
+
+    // allocate device memory
+    err = cudaMalloc((void**)&deviceArrayA,size);
+    check(err, __FILE__, __LINE__);
+    err = cudaMalloc((void**)&deviceArrayB,size);
+    check(err, __FILE__, __LINE__);
+    err = cudaMalloc((void**)&deviceArrayC,size);
+    check(err, __FILE__, __LINE__);
+
+    // initialise host memory
+    for(int i=0; i<length; i++)
+    {
+        hostArrayA[i] = i;
+        hostArrayB[i] = 1;
+        hostArrayC[i] = 0;
+    }
+
+    // print host memory values for all arrays
+    printf("Array A: ");
+    printArrayTerse(hostArrayA,length,8);
+    printf("Array B: ");
+    printArrayTerse(hostArrayB,length,8);
+    printf("Array C: ");
+    printArrayTerse(hostArrayC,length,8);
+
+    // copy host to device for arrays A and B
+    err = cudaMemcpy(deviceArrayA, hostArrayA, size, cudaMemcpyHostToDevice);
+    check(err, __FILE__, __LINE__);
+    err = cudaMemcpy(deviceArrayB, hostArrayB, size, cudaMemcpyHostToDevice);
+    check(err, __FILE__, __LINE__);
+    printf("\nCopied array A and B to device\n\n");
+
+    // choose a thread topology
+    // HINT: insert topology (numBlocks and blockSize) here <--
+    printf("Thread topology: %i blocks of %i threads",numBlocks,blockSize);
+    printf(" (%i total threads)\n\n",numBlocks*blockSize);
+    
+    // execute vector addition kernel
+    // HINT: add kernel launch here <--
+    err = cudaPeekAtLastError();
+    check(err, __FILE__, __LINE__);
+    printf("Executed vector addition kernel: C = A + B on %i elements\n\n", length);
+
+    // copy device to host for array C
+    err = cudaMemcpy(hostArrayC, deviceArrayC, size, cudaMemcpyDeviceToHost);
+    check(err, __FILE__, __LINE__);
+    printf("Copied array C from device\n\n");
+
+    // print host memory values for array C
+    printf("Array C: ");
+    printArrayTerse(hostArrayC,length,8);
+
+    // free device memory
+    err = cudaFree(deviceArrayA);
+    check(err, __FILE__, __LINE__);
+    err = cudaFree(deviceArrayB);
+    check(err, __FILE__, __LINE__);
+    err = cudaFree(deviceArrayC);
+    check(err, __FILE__, __LINE__);
+
+    // free host memory
+    err = cudaFreeHost(hostArrayA);
+    check(err, __FILE__, __LINE__);
+    err = cudaFreeHost(hostArrayB);
+    check(err, __FILE__, __LINE__);
+    err = cudaFreeHost(hostArrayC);
+    check(err, __FILE__, __LINE__);
+    printf("\nFreed device and host memory\n\n");
+
+    // exit
+    return EXIT_SUCCESS;
+}
