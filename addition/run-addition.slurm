@@ -2,7 +2,7 @@
 #SBATCH --reservation=courseq
 #SBATCH --partition=gpuq
 #SBATCH --tasks=1
-#SBATCH --memory=1G
+#SBATCH --mem=1G
 #SBATCH --gres=gpu:1
 #SBATCH --constraint=v100
 #SBATCH --time=00:05:00
