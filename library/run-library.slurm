@@ -1,12 +1,12 @@
 #!/bin/bash --login
 #SBATCH --reservation=courseq
 #SBATCH --partition=gpuq
-#SBATCH --nodes=1
-#SBATCH --gres=gpu:4
-#SBATCH --constraint=p100
+#SBATCH --tasks=1
+#SBATCH --gres=gpu:1
+#SBATCH --constraint=v100
 #SBATCH --time=00:05:00
 #SBATCH --export=NONE
  
-module load broadwell gcc/5.4.0 cuda
+module load cuda
 
-srun --export=all -n 1 ./library > library.txt 
+srun --export=all -n 1 ./library
